@@ -1,157 +1,158 @@
 #include "GameStateMainMenu.h"
 #include "Application.h"
 #include "Game.h"
-#include <assert.h>
+#include <cassert>
+#include <memory>
 
 namespace ArkanoidGame
 {
-	void GameStateMainMenuData::Init()
-	{
-		assert(font.loadFromFile(RESOURCES_PATH + "Fonts/Roboto-Regular.ttf"));
+    void GameStateMainMenuData::Init()
+    {
+        assert(font.loadFromFile(RESOURCES_PATH + "Fonts/Roboto-Regular.ttf"));
 
-		MenuItem startGame;
-		startGame.text.setString("Start Game");
-		startGame.text.setFont(font);
-		startGame.text.setCharacterSize(24);
-		startGame.onPressCallback = [](MenuItem&) {
-			Application::Instance().GetGame().SwitchStateTo(GameStateType::Playing);
-			};
-		
-		const bool isInfiniteApples = Application::Instance().GetGame().IsEnableOptions(GameOptions::InfiniteApples);
-		MenuItem optionsInfiniteApplesItem;
-		optionsInfiniteApplesItem.text.setString("Infinite Apples: " + std::string(isInfiniteApples ? "On" : "Off"));
-		optionsInfiniteApplesItem.text.setFont(font);
-		optionsInfiniteApplesItem.text.setCharacterSize(24);
-		optionsInfiniteApplesItem.onPressCallback = [](MenuItem& item) {
-			Game& game = Application::Instance().GetGame();
-			bool newOptionValue = !game.IsEnableOptions(GameOptions::InfiniteApples);
-			game.SetOption(GameOptions::InfiniteApples, newOptionValue);
-			item.text.setString("Infinite Apples: " + std::string(newOptionValue ? "On" : "Off"));
-			};
+        auto startGame = std::make_unique<MenuItem>();
+        startGame->GetText().setString("Start Game");
+        startGame->GetText().setFont(font);
+        startGame->GetText().setCharacterSize(24);
+        startGame->set_on_press([](MenuItem&) {
+            Application::Instance().GetGame().SwitchStateTo(GameStateType::Playing);
+            });
 
-		const bool isWithAcceleration = Application::Instance().GetGame().IsEnableOptions(GameOptions::WithAcceleration);
-		MenuItem optionsWithAccelerationItem;
-		optionsWithAccelerationItem.text.setString("With Acceleration: " + std::string(isWithAcceleration ? "On" : "Off"));
-		optionsWithAccelerationItem.text.setFont(font);
-		optionsWithAccelerationItem.text.setCharacterSize(24);
-		optionsWithAccelerationItem.onPressCallback = [](MenuItem& item) {
-			Game& game = Application::Instance().GetGame();
-			bool newOptionValue = !game.IsEnableOptions(GameOptions::WithAcceleration);
-			game.SetOption(GameOptions::WithAcceleration, newOptionValue);
-			item.text.setString("With Acceleration: " + std::string(newOptionValue ? "On" : "Off"));
-			};
+        const bool isInfiniteApples =
+            Application::Instance().GetGame().IsEnableOptions(GameOptions::InfiniteApples);
 
-		MenuItem options;
-		options.text.setString("Options");
-		options.text.setFont(font);
-		options.text.setCharacterSize(24);
-		options.hintText.setString("Options");
-		options.hintText.setFont(font);
-		options.hintText.setCharacterSize(48);
-		options.hintText.setFillColor(sf::Color::Red);
-		options.childrenOrientation = Orientation::Vertical;
-		options.childrenAlignment = Alignment::Middle;
-		options.childrenSpacing = 10.f;
-		options.childrens.push_back(optionsInfiniteApplesItem);
-		options.childrens.push_back(optionsWithAccelerationItem);
-		
-		MenuItem recordsItem;
-		recordsItem.text.setString("Records");
-		recordsItem.text.setFont(font);
-		recordsItem.text.setCharacterSize(24);
-		recordsItem.onPressCallback = [](MenuItem&) {
-			Application::Instance().GetGame().PushState(GameStateType::Records, true);
-			};
+        auto optionsInfiniteApplesItem = std::make_unique<MenuItem>();
+        optionsInfiniteApplesItem->GetText().setString(
+            "Infinite Apples: " + std::string(isInfiniteApples ? "On" : "Off"));
+        optionsInfiniteApplesItem->GetText().setFont(font);
+        optionsInfiniteApplesItem->GetText().setCharacterSize(24);
+        optionsInfiniteApplesItem->set_on_press([](MenuItem& item) {
+            Game& game = Application::Instance().GetGame();
+            bool newOptionValue = !game.IsEnableOptions(GameOptions::InfiniteApples);
+            game.SetOption(GameOptions::InfiniteApples, newOptionValue);
+            item.GetText().setString("Infinite Apples: " + std::string(newOptionValue ? "On" : "Off"));
+            });
 
-		MenuItem yesItem;
-		yesItem.text.setString("Yes");
-		yesItem.text.setFont(font);
-		yesItem.text.setCharacterSize(24);
-		yesItem.onPressCallback = [](MenuItem&) {
-			Application::Instance().GetGame().SwitchStateTo(GameStateType::None);
-			};
+        const bool isWithAcceleration =
+            Application::Instance().GetGame().IsEnableOptions(GameOptions::WithAcceleration);
 
-		MenuItem noItem;
-		noItem.text.setString("No");
-		noItem.text.setFont(font);
-		noItem.text.setCharacterSize(24);
-		noItem.onPressCallback = [this](MenuItem&) {
-			menu.GoBack();
-			};
+        auto optionsWithAccelerationItem = std::make_unique<MenuItem>();
+        optionsWithAccelerationItem->GetText().setString(
+            "With Acceleration: " + std::string(isWithAcceleration ? "On" : "Off"));
+        optionsWithAccelerationItem->GetText().setFont(font);
+        optionsWithAccelerationItem->GetText().setCharacterSize(24);
+        optionsWithAccelerationItem->set_on_press([](MenuItem& item) {
+            Game& game = Application::Instance().GetGame();
+            bool newOptionValue = !game.IsEnableOptions(GameOptions::WithAcceleration);
+            game.SetOption(GameOptions::WithAcceleration, newOptionValue);
+            item.GetText().setString("With Acceleration: " + std::string(newOptionValue ? "On" : "Off"));
+            });
 
-		MenuItem exitGameItem;
-		exitGameItem.text.setString("Exit Game");
-		exitGameItem.text.setFont(font);
-		exitGameItem.text.setCharacterSize(24);
-		exitGameItem.hintText.setString("Are you sure?");
-		exitGameItem.hintText.setFont(font);
-		exitGameItem.hintText.setCharacterSize(48);
-		exitGameItem.hintText.setFillColor(sf::Color::Red);
-		exitGameItem.childrenOrientation = Orientation::Horizontal;
-		exitGameItem.childrenAlignment = Alignment::Middle;
-		exitGameItem.childrenSpacing = 10.f;
-		exitGameItem.childrens.push_back(yesItem);
-		exitGameItem.childrens.push_back(noItem);
+        auto options = std::make_unique<MenuItem>();
+        options->GetText().setString("Options");
+        options->GetText().setFont(font);
+        options->GetText().setCharacterSize(24);
+        options->HintText().setString("Options");
+        options->HintText().setFont(font);
+        options->HintText().setCharacterSize(48);
+        options->HintText().setFillColor(sf::Color::Red);
+        options->set_children_orientation(Orientation::Vertical);
+        options->set_children_alignment(Alignment::Middle);
+        options->set_children_spacing(10.f);
 
-		MenuItem mainMenu;
-		mainMenu.hintText.setString("Arkanoid Game");
-		mainMenu.hintText.setFont(font);
-		mainMenu.hintText.setCharacterSize(48);
-		mainMenu.hintText.setFillColor(sf::Color::Red);
-		mainMenu.childrenOrientation = Orientation::Vertical;
-		mainMenu.childrenAlignment = Alignment::Middle;
-		mainMenu.childrenSpacing = 10.f;
-		mainMenu.childrens.push_back(startGame);
-		mainMenu.childrens.push_back(options);
-		mainMenu.childrens.push_back(recordsItem);
-		mainMenu.childrens.push_back(exitGameItem);
-		
+        options->add_child(std::move(optionsInfiniteApplesItem));
+        options->add_child(std::move(optionsWithAccelerationItem));
 
-		menu.Init(mainMenu);
-	}
+        auto recordsItem = std::make_unique<MenuItem>();
+        recordsItem->GetText().setString("Records");
+        recordsItem->GetText().setFont(font);
+        recordsItem->GetText().setCharacterSize(24);
+        recordsItem->set_on_press([](MenuItem&) {
+            Application::Instance().GetGame().PushState(GameStateType::Records, true);
+            });
 
-	void GameStateMainMenuData::HandleWindowEvent(const sf::Event& event)
-	{
-		if (event.type == sf::Event::KeyPressed)
-		{
-			if (event.key.code == sf::Keyboard::Escape)
-			{
-				menu.GoBack();
-			}
-			else if (event.key.code == sf::Keyboard::Enter)
-			{
-				menu.PressOnSelectedItem();
-			}
-			
-			Orientation orientation = menu.GetCurrentContext().childrenOrientation;
-			if (orientation == Orientation::Vertical && event.key.code == sf::Keyboard::Up ||
-				orientation == Orientation::Horizontal && event.key.code == sf::Keyboard::Left)
-			{
-				menu.SwitchToPreviousMenuItem();
-			}
-			else if (orientation == Orientation::Vertical && event.key.code == sf::Keyboard::Down ||
-						orientation == Orientation::Horizontal && event.key.code == sf::Keyboard::Right)
-			{
-				menu.SwitchToNextMenuItem();
-			}
-		}
-	}
+        auto yesItem = std::make_unique<MenuItem>();
+        yesItem->GetText().setString("Yes");
+        yesItem->GetText().setFont(font);
+        yesItem->GetText().setCharacterSize(24);
+        yesItem->set_on_press([](MenuItem&) {
+            Application::Instance().GetGame().SwitchStateTo(GameStateType::None);
+            });
 
-	void GameStateMainMenuData::Update(float timeDelta)
-	{
+        auto noItem = std::make_unique<MenuItem>();
+        noItem->GetText().setString("No");
+        noItem->GetText().setFont(font);
+        noItem->GetText().setCharacterSize(24);
+        noItem->set_on_press([this](MenuItem&) {
+            menu.GoBack();
+            });
 
-	}
+        auto exitGameItem = std::make_unique<MenuItem>();
+        exitGameItem->GetText().setString("Exit Game");
+        exitGameItem->GetText().setFont(font);
+        exitGameItem->GetText().setCharacterSize(24);
+        exitGameItem->HintText().setString("Are you sure?");
+        exitGameItem->HintText().setFont(font);
+        exitGameItem->HintText().setCharacterSize(48);
+        exitGameItem->HintText().setFillColor(sf::Color::Red);
+        exitGameItem->set_children_orientation(Orientation::Horizontal);
+        exitGameItem->set_children_alignment(Alignment::Middle);
+        exitGameItem->set_children_spacing(10.f);
+        exitGameItem->add_child(std::move(yesItem));
+        exitGameItem->add_child(std::move(noItem));
 
-	void GameStateMainMenuData::Draw(sf::RenderWindow& window)
-	{
-		sf::Vector2f viewSize = (sf::Vector2f)window.getView().getSize();
+        auto mainMenu = std::make_unique<MenuItem>();
+        mainMenu->HintText().setString("Arkanoid Game");
+        mainMenu->HintText().setFont(font);
+        mainMenu->HintText().setCharacterSize(48);
+        mainMenu->HintText().setFillColor(sf::Color::Red);
+        mainMenu->set_children_orientation(Orientation::Vertical);
+        mainMenu->set_children_alignment(Alignment::Middle);
+        mainMenu->set_children_spacing(10.f);
+        mainMenu->add_child(std::move(startGame));
+        mainMenu->add_child(std::move(options));
+        mainMenu->add_child(std::move(recordsItem));
+        mainMenu->add_child(std::move(exitGameItem));
 
-		sf::Text* hintText = &menu.GetCurrentContext().hintText;
-		hintText->setOrigin(GetTextOrigin(*hintText, { 0.5f, 0.f }));
-		hintText->setPosition(viewSize.x / 2.f, 150.f);
-		window.draw(*hintText);
+        menu.SetRoot(std::move(mainMenu)); 
+    }
 
-		menu.Draw(window, viewSize / 2.f, { 0.5f, 0.f });
-	}
+    void GameStateMainMenuData::HandleWindowEvent(const sf::Event& event)
+    {
+        if (event.type == sf::Event::KeyPressed)
+        {
+            if (event.key.code == sf::Keyboard::Escape)
+                menu.GoBack();
+            else if (event.key.code == sf::Keyboard::Enter)
+                menu.PressOnSelectedItem();
+
+            Orientation orientation = menu.GetCurrentContext().get_children_orientation();
+
+            if ((orientation == Orientation::Vertical && event.key.code == sf::Keyboard::Up) ||
+                (orientation == Orientation::Horizontal && event.key.code == sf::Keyboard::Left))
+            {
+                menu.SwitchToPreviousMenuItem();
+            }
+            else if ((orientation == Orientation::Vertical && event.key.code == sf::Keyboard::Down) ||
+                (orientation == Orientation::Horizontal && event.key.code == sf::Keyboard::Right))
+            {
+                menu.SwitchToNextMenuItem();
+            }
+        }
+    }
+
+    void GameStateMainMenuData::Update(float timeDelta) {}
+
+    void GameStateMainMenuData::Draw(sf::RenderWindow& window)
+    {
+        sf::Vector2f viewSize = (sf::Vector2f)window.getView().getSize();
+
+        sf::Text* hintText = &menu.GetCurrentContext().HintText();
+        hintText->setOrigin(GetTextOrigin(*hintText, { 0.5f, 0.f }));
+        hintText->setPosition(viewSize.x / 2.f, 150.f);
+        window.draw(*hintText);
+
+        menu.Draw(window, viewSize / 2.f, { 0.5f, 0.f });
+    }
 
 }

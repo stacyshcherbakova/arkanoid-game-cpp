@@ -1,139 +1,109 @@
 #include "Menu.h"
-#include <assert.h>
+#include <cassert>
+#include <algorithm>
 
-namespace ArkanoidGame
-{
-	void Menu::Init(const MenuItem& item)
-	{
-		rootItem = item;
+namespace ArkanoidGame {
 
-		InitMenuItem(rootItem);
-		if (!rootItem.childrens.empty()) {
-			SelectMenuItem(rootItem.childrens.front());
-		}
-	}
-	
-	void Menu::InitMenuItem(MenuItem& item)
-	{
-		for (auto& child : item.childrens)
-		{
-			child.parent = &item;
-			InitMenuItem(child);
-		}
-	}
+    void Menu::SetRoot(std::unique_ptr<MenuItem> root) {
+        rootItem = std::move(root);
+        selectedItem = nullptr;
 
-	void Menu::Draw(sf::RenderWindow& window, sf::Vector2f position, sf::Vector2f origin)
-	{
-		MenuItem& expandedItem = GetCurrentContext();
+        if (rootItem) {
+            InitMenuItem(*rootItem);
+            for (auto& ch : rootItem->children()) {
+                if (ch->enabled()) { SelectMenuItem(*ch); break; }
+            }
+        }
+    }
 
-		std::vector<sf::Text*> texts;
-		texts.reserve(expandedItem.childrens.size());
-		for (auto& child : expandedItem.childrens) {
-			if (child.isEnabled) {
-				texts.push_back(&child.text);
-			}
-		}
+    void Menu::InitMenuItem(MenuItem& item) {
+        for (auto& ch : item.children()) {
+            ch->SetParent(&item);
+            InitMenuItem(*ch);
+        }
+    }
 
-		DrawTextList(
-			window,
-			texts,
-			expandedItem.childrenSpacing,
-			expandedItem.childrenOrientation,
-			expandedItem.childrenAlignment,
-			position,
-			origin);
-	}
-	
-	void Menu::PressOnSelectedItem()
-	{
-		if (!selectedItem) {
-			return;
-		}
+    void Menu::Draw(sf::RenderWindow& window, sf::Vector2f position, sf::Vector2f origin) {
+        MenuItem& expanded = GetCurrentContext();
 
-		if (selectedItem->onPressCallback) {
-			selectedItem->onPressCallback(*selectedItem);
-			return;
-		}
+        std::vector<sf::Text*> texts;
+        texts.reserve(expanded.children().size());
+        for (auto& ch : expanded.children()) {
+            if (ch->enabled()) {
+                texts.push_back(&ch->GetText());
+            }
+        }
 
-		// default behaviour
-		if (!selectedItem->childrens.empty()) {
-			SelectMenuItem(selectedItem->childrens.front());
-		}
-	}
+        DrawTextList(window,
+            texts,
+            expanded.get_children_spacing(),
+            expanded.get_children_orientation(),
+            expanded.get_children_alignment(),
+            position,
+            origin);
+    }
 
-	void Menu::GoBack()
-	{
-		MenuItem& parent = GetCurrentContext();
-		if (&parent != &rootItem) {
-			SelectMenuItem(parent);
-		}
-	}
+    void Menu::PressOnSelectedItem() {
+        if (!selectedItem) return;
+        if (selectedItem->trigger_press()) return;
 
-	void Menu::SwitchToPreviousMenuItem()
-	{
-		if (!selectedItem) {
-			return;
-		}
-		
-		MenuItem* parent = selectedItem->parent;
-		assert(parent); // There always should be parent
+        for (auto& ch : selectedItem->children()) {
+            if (ch->enabled()) { SelectMenuItem(*ch); return; }
+        }
+    }
 
-		auto it = std::find_if(parent->childrens.begin(), parent->childrens.end(), [this](const auto& item) {
-			return selectedItem == &item;
-		});
-		if (it != parent->childrens.begin()) {
-			SelectMenuItem(*std::prev(it));
-		}
-	}
+    void Menu::GoBack() {
+        if (!selectedItem) return;
+        if (auto* p = selectedItem->Parent()) SelectMenuItem(*p);
+    }
 
-	void Menu::SwitchToNextMenuItem()
-	{
-		if (!selectedItem) {
-			return;
-		}
-		
-		MenuItem* parent = selectedItem->parent;
-		assert(parent); // There always should be parent
-		
-		auto it = std::find_if(parent->childrens.begin(), parent->childrens.end(), [this](const auto& item) {
-			return selectedItem == &item;
-			});
-		it = std::next(it);
-		if (it != parent->childrens.end()) {
-			SelectMenuItem(*it);
-		}
-	}
+    void Menu::SwitchToNextMenuItem() {
+        if (!selectedItem) return;
+        auto* p = selectedItem->Parent(); if (!p) return;
+        auto& vec = p->children();
 
-	void Menu::SelectMenuItem(MenuItem& item)
-	{
-		assert(&item != &rootItem);
+        auto it = std::find_if(vec.begin(), vec.end(),
+            [this](const std::unique_ptr<MenuItem>& n) { return n.get() == selectedItem; });
 
-		if (selectedItem == &item)
-		{
-			return;
-		}
+        if (it != vec.end()) {
+            for (auto nit = std::next(it); nit != vec.end(); ++nit) {
+                if ((*nit)->enabled()) { SelectMenuItem(**nit); return; }
+            }
+        }
+    }
 
-		if (!item.isEnabled)
-		{
-			// Don't allow to select disabled item
-			return;
-		}
+    void Menu::SwitchToPreviousMenuItem() {
+        if (!selectedItem) return;
+        auto* p = selectedItem->Parent(); if (!p) return;
+        auto& vec = p->children();
 
-		if (selectedItem)
-		{
-			selectedItem->text.setFillColor(selectedItem->deselectedColor);
-		}
+        auto it = std::find_if(vec.begin(), vec.end(),
+            [this](const std::unique_ptr<MenuItem>& n) { return n.get() == selectedItem; });
 
-		selectedItem = &item;
+        if (it != vec.begin() && it != vec.end()) {
+            for (auto rit = std::make_reverse_iterator(it);
+                rit != std::make_reverse_iterator(vec.begin()); ++rit) {
+                if ((*rit)->enabled()) { SelectMenuItem(**rit); return; }
+            }
+        }
+    }
 
-		if (selectedItem)
-		{
-			selectedItem->text.setFillColor(selectedItem->selectedColor);
-		}
-	}
+    void Menu::SelectMenuItem(MenuItem& item) {
+        if (&item == selectedItem || !item.enabled()) return;
 
-	MenuItem& Menu::GetCurrentContext()
-	{
-		return selectedItem ? *(selectedItem->parent) : rootItem;
-	}
+        if (selectedItem) {
+            selectedItem->GetText().setFillColor(selectedItem->deselected_color());
+        }
+        selectedItem = &item;
+        selectedItem->GetText().setFillColor(selectedItem->selected_color());
+    }
+
+    MenuItem& Menu::GetCurrentContext() {
+        if (selectedItem && selectedItem->Parent()) {
+            return *selectedItem->Parent();
+        }
+        assert(rootItem && "Root must exist before drawing");
+        return *rootItem;
+    }
+
 }
